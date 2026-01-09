@@ -35,36 +35,41 @@ with st.sidebar:
 
     st.divider()
 
-@st.cache_resource(ttl="1h")
+@st.cache_resource(ttl=3600)
 def configure_retriever(uploaded_files):
-    # Read documents
     docs = []
-    temp_dir = tempfile.TemporaryDirectory()
-    for file in uploaded_files:
-        temp_filepath = os.path.join(temp_dir.name, file.name)
-        with open(temp_filepath, "wb") as f:
-            f.write(file.getvalue())
-        loader = PyMuPDFLoader(temp_filepath)
-        docs.extend(loader.load())
 
-    # Split into document chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500,
-                                                chunk_overlap=100)
-    doc_chunks = text_splitter.split_documents(docs)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for file in uploaded_files:
+            temp_path = os.path.join(temp_dir, file.name)
+            with open(temp_path, "wb") as f:
+                f.write(file.getvalue())
 
-    # Create document embeddings and store in Vector DB
+            loader = PyMuPDFLoader(temp_path)
+            docs.extend(loader.load())
+
+    # Split documents into chunks
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
+    )
+    doc_chunks = splitter.split_documents(docs)
+
+    # Embeddings
     embeddings_model = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
- # Create embeddings + store vectors in FAISS (no SQLite; Streamlit Cloud friendly)
+    # FAISS vector store (Streamlit Cloud safe)
     vectordb = FAISS.from_documents(doc_chunks, embeddings_model)
 
     retriever = vectordb.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 4}
     )
-return retriever
+
+    return retriever
+
 
 
 # Streaming handler for Claude responses
