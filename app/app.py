@@ -66,7 +66,12 @@ def configure_retriever(uploaded_files):
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    vectordb = Chroma.from_documents(doc_chunks, embeddings_model)
+  # Create an in-memory Chroma DB (avoids sqlite/persistence issues on Streamlit Cloud)
+    vectordb = Chroma.from_documents(
+        documents=doc_chunks,
+        embedding=embeddings_model,
+        collection_name="pdf_rag",
+    )
 
     # Define retriever object
     retriever = vectordb.as_retriever(
