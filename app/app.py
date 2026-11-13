@@ -29,7 +29,7 @@ with st.sidebar:
     # Model selection
     model_option = st.selectbox(
         "Select Claude Model",
-        ["claude-3-haiku-20240307", "claude-3-sonnet-20240229", "claude-3-opus-20240229"],
+        ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"],
         index=0
     )
 
@@ -89,8 +89,7 @@ def get_claude_response(api_key, model, prompt, stream_handler=None):
     if stream_handler:
         with client.messages.stream(
             model=model,
-            max_tokens=1024,
-            temperature=0.2,
+            max_tokens=4096,  # thinking is on by default on current models and counts toward this
             system="You are a helpful AI assistant that answers questions based only on the provided context.",
             messages=[
                 {"role": "user", "content": prompt}
@@ -103,8 +102,7 @@ def get_claude_response(api_key, model, prompt, stream_handler=None):
     else:
         message = client.messages.create(
             model=model,
-            max_tokens=1024,
-            temperature=0.2,
+            max_tokens=4096,  # thinking is on by default on current models and counts toward this
             system="You are a helpful AI assistant that answers questions based only on the provided context.",
             messages=[
                 {"role": "user", "content": prompt}
